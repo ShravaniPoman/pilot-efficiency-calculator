@@ -1,0 +1,740 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pilot Efficiency Calculator</title>
+<style>
+/* App: counties → challenges → pilot. Pilot layout: one screen of impact. Headline + savings card with the one slider → three big reductions → two charts (cost gap, five-year build-up) → two closed drawers. */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:hsl(210 15% 93%); --ink:hsl(220 20% 10%); --ink-2:hsl(220 12% 30%); --muted:hsl(220 10% 45%); --line:hsl(214 20% 88%); --line-2:hsl(214 18% 80%);
+  --action:hsl(210 85% 45%); --action-ink:#FFFFFF;
+  --m-blue:#4B7AEF; --m-green:#6EBC59; --m-yellow:#FDE050; --m-orange:#FFAA00;
+  --c-today:#9CA3AF; --c-with:#0179C2; --c-save:#6EBC59; --c-ctx:#C4CAD3;
+  --good-ink:#4E9A3A;
+  --shadow:0 1px 2px rgba(15,20,31,.05),0 10px 30px -14px rgba(15,20,31,.16);
+  --f-display:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --f-body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --f-code:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2{font-family:var(--f-display);margin:0;letter-spacing:-.02em;text-wrap:balance}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+:focus-visible{outline:2px solid var(--action);outline-offset:2px;border-radius:6px}
+
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;padding-block:14px}
+.logo{height:24px;width:auto;display:block}
+.vr{width:1px;height:26px;background:var(--line-2)}
+.top b{font-family:var(--f-display);font-size:17px;font-weight:700}
+.rule{display:grid;grid-template-columns:3fr 2fr 1fr 2fr;height:4px}
+.rule i:nth-child(1){background:var(--m-blue)}.rule i:nth-child(2){background:var(--m-green)}.rule i:nth-child(3){background:var(--m-yellow)}.rule i:nth-child(4){background:var(--m-orange)}
+
+main{display:grid;gap:20px;padding-block:36px 48px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:center}
+.hero h1{font-size:clamp(32px,4.6vw,50px);font-weight:700;line-height:1.02;margin-top:10px}
+.hero h1 em{font-style:normal;color:var(--c-save)}
+.how{margin-top:14px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 12px}
+.how span{color:var(--line-2)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px}
+.save{box-shadow:var(--shadow);display:grid;gap:20px}
+.save .val{font-family:var(--f-display);font-weight:700;font-size:clamp(64px,9vw,96px);line-height:.95;letter-spacing:-.02em;color:var(--good-ink)}
+.save .per{color:var(--ink-2);margin-top:6px}
+.slider{display:grid;gap:6px}
+.slider .row{display:flex;justify-content:space-between;align-items:baseline}
+.slider label{font-weight:600}
+.slider output{font-family:var(--f-display);font-weight:700;font-size:24px}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{font:600 13px var(--f-body);border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);padding:7px 14px;border-radius:999px;cursor:pointer}
+.presets button:hover{border-color:var(--action);color:var(--action)}
+.presets button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;background:linear-gradient(to right,var(--tc,var(--action)) 0 var(--p,50%),var(--line) var(--p,50%) 100%)}
+input[type=range]::-moz-range-track{height:8px;border-radius:999px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:999px;background:var(--tc,var(--action))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--surface);border:3px solid var(--tc,var(--action));margin-top:-8px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--surface);border:3px solid var(--tc,var(--action))}
+#adopt{--tc:var(--c-save)}
+
+.cuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:var(--surface);border:1px solid var(--line);border-radius:20px}
+.cut{padding:22px 26px;border-left:1px solid var(--line)}
+.cut:first-child{border-left:0}
+.cut .v{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:1}
+.cut .l{color:var(--muted);margin-top:6px}
+
+.charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.card h2{font-size:21px;font-weight:700}
+.chart{margin-top:14px;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-family:var(--f-body);fill:var(--ink-2)}
+.chart .big{font-family:var(--f-display);font-weight:700;fill:var(--ink)}
+.chart .gain{fill:var(--good-ink)}
+.chart .ax{fill:var(--muted);font-size:13px}
+.hit{cursor:default}.hit:focus{outline:none}.hit:hover .m,.hit:focus .m{filter:brightness(1.08)}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:16px}
+summary{cursor:pointer;padding:16px 22px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:22px;color:var(--muted);font-weight:500}
+details[open] summary::after{content:"−"}
+.dbody{padding:4px 22px 22px;display:grid;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 28px}
+.ctl{display:grid;gap:4px}
+.ctl .row{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.ctl output{font-weight:600}
+.segb{display:inline-flex;gap:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:3px}
+.segb button{font:600 13px var(--f-body);border:0;background:transparent;color:var(--ink-2);padding:4px 12px;border-radius:7px;cursor:pointer}
+.segb button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.money{display:flex;align-items:center;border:1px solid var(--line-2);border-radius:9px;background:var(--surface)}
+.money span{padding-inline:10px;color:var(--muted)}
+.money input{border:0;background:transparent;color:var(--ink);font:600 14px var(--f-body);padding:8px 10px 8px 0;width:100%;min-width:0}
+.money input:focus{outline:none}.money:focus-within{border-color:var(--action)}
+.formula{font-family:var(--f-code);font-size:13px;background:var(--surface-2);border-radius:10px;padding:14px;line-height:1.9;overflow-x:auto;white-space:pre}
+.src{font-size:13px;color:var(--muted);display:grid;gap:4px}
+.src a{color:var(--action)}
+footer{text-align:center;font-size:12px;color:var(--muted);padding-block:0 32px}
+
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);box-shadow:var(--shadow);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--muted);opacity:0;transition:opacity .12s}
+#tip.on{opacity:1}
+#tip b{display:block;font-size:15px;color:var(--ink)}
+
+
+/* navigation views */
+.home-link{color:inherit;text-decoration:none}
+.home-link:hover b{color:var(--action)}
+.view{display:grid;gap:22px;padding-block:36px 48px;width:100%}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
+.crumbs a{color:var(--ink-2);text-decoration:none;font-weight:500}
+.crumbs a:hover{color:var(--action)}
+.crumbs span[aria-hidden]{color:var(--line-2)}
+.intro h1{font-size:clamp(34px,5vw,54px);font-weight:700;line-height:1.02;margin-top:10px}
+.intro p{color:var(--ink-2);margin-top:12px;font-size:16px}
+.counties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.county{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;display:grid;gap:18px;align-content:space-between;min-height:200px;transition:border-color .15s,box-shadow .15s,transform .15s}
+.county:hover{border-color:var(--line-2);box-shadow:var(--shadow);transform:translateY(-2px)}
+.county:focus-visible{outline:2px solid var(--action);outline-offset:2px}
+.county[aria-pressed="true"]{border-color:var(--ink);box-shadow:var(--shadow)}
+.county .st{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.county .nm{font-family:var(--f-display);font-weight:700;font-size:32px;line-height:1.05;margin-top:6px}
+.county .meta{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;color:var(--ink-2)}
+.chip{flex:none;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.live{background:rgb(110 188 89 / .16);color:var(--good-ink)}
+.bar4{display:grid;grid-template-columns:3fr 2fr 1fr 2fr;height:4px;border-radius:2px;overflow:hidden}
+.bar4 i:nth-child(1){background:var(--m-blue)}.bar4 i:nth-child(2){background:var(--m-green)}.bar4 i:nth-child(3){background:var(--m-yellow)}.bar4 i:nth-child(4){background:var(--m-orange)}
+.county:not([data-live]) .bar4{filter:grayscale(1);opacity:.5}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:8px}
+.sec-h h2{font-size:24px;font-weight:700}
+.sec-h span{color:var(--muted);font-size:14px}
+.challenges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.chal{text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:14px;align-content:start;transition:border-color .15s,box-shadow .15s,transform .15s}
+.chal:hover{border-color:var(--line-2);box-shadow:var(--shadow);transform:translateY(-2px)}
+.chal .t{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.chal h3{margin:0;font-family:var(--f-display);font-size:22px;font-weight:700}
+.chal>p{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.chal ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:14px;color:var(--ink-2)}
+.chal li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:6px}
+.chal li em{font-style:normal;color:var(--muted);font-size:13px}
+.chal li.on em{color:var(--good-ink);font-weight:600}
+.soon{background:var(--surface);border:1px dashed var(--line-2);border-radius:20px;padding:40px 26px;text-align:center;display:grid;gap:8px;justify-items:center}
+.soon h2{font-size:26px;font-weight:700}
+.soon p{color:var(--muted);max-width:46ch}
+.pilots{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.pilot{text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:10px;align-content:start;transition:border-color .15s,box-shadow .15s,transform .15s}
+a.pilot:hover{border-color:var(--line-2);box-shadow:var(--shadow);transform:translateY(-2px)}
+.pilot h3{margin:0;font-family:var(--f-display);font-size:21px;font-weight:700}
+.pilot p{color:var(--muted);font-size:14px}
+div.pilot{opacity:.75}
+.go{font-weight:600;color:var(--action);font-size:14px}
+@media (max-width:860px){.counties,.challenges{grid-template-columns:minmax(0,1fr)}.county{min-height:0}}
+@media (max-width:860px){
+  .hero,.charts{grid-template-columns:minmax(0,1fr)}
+  .grid3{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .wrap{padding-inline:16px}
+  .card{padding:18px}
+  .cuts{grid-template-columns:minmax(0,1fr)}
+  .cut{border-left:0;border-top:1px solid var(--line);padding:16px 18px}
+  .cut:first-child{border-top:0}
+  .cut .v{font-size:36px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Sargassum page */
+/* Sargassum page additions */
+#s-share{--tc:var(--c-save)}
+.legend-i{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.legend-i i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sk-node{font-size:14px;font-weight:700;fill:var(--ink)}
+.sk-sub{font-size:13px;fill:var(--muted)}
+.rib{transition:opacity .2s}.rib:hover{opacity:.85}
+
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;background:hsl(48 97% 65% / .28);color:var(--ink)}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--m-orange)}
+.draft{font-size:13px;color:var(--muted);border:1px dashed var(--line-2);border-radius:12px;padding:10px 14px}
+.flow{display:grid;gap:18px;margin-top:16px}
+.frow{display:grid;gap:8px}
+.frow .fl{font-weight:700;font-family:var(--f-display);font-size:15px}
+.fpath{display:grid;grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr);align-items:stretch}
+.node{border-radius:12px;padding:12px 14px;display:grid;gap:2px;align-content:center;min-width:0}
+.node b{font-size:15px}
+.node span{font-size:13px;color:var(--ink-2)}
+.node .amt{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--ink)}
+.n-county{background:var(--surface-2)}
+.n-today{background:hsl(40 100% 50% / .16)}
+.n-with{background:hsl(105 46% 54% / .18)}
+.n-bad{background:hsl(0 0% 50% / .12)}
+.arrow{display:grid;place-items:center;color:var(--muted);font-size:20px}
+.fnote{font-size:14px;color:var(--ink-2)}
+.fnote b{color:var(--good-ink)}
+@media (max-width:640px){
+  .fpath{grid-template-columns:minmax(0,1fr)}
+  .arrow{transform:rotate(90deg);height:26px}
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <img class="logo" src="data:image/webp;base64,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" alt="MDIA">
+    <div class="vr"></div>
+    <a class="home-link" href="#home"><b>Pilot Efficiency Calculator</b></a>
+  </div>
+  <div class="rule" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+</header>
+
+
+<main>
+<section class="wrap view" id="v-home">
+  <div class="intro">
+    <div class="eyebrow">Miami-Dade Innovation Authority</div>
+    <h1>Pilot savings by county</h1>
+    <p>Choose a county to see its challenges.</p>
+  </div>
+  <div class="counties" id="counties"></div>
+  <div id="county-panel" hidden>
+    <div class="sec-h"><h2 id="cp-title"></h2><span id="cp-sub"></span></div>
+    <div id="cp-body" style="margin-top:16px"></div>
+  </div>
+</section>
+
+<section class="wrap view" id="v-chal" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb" id="ch-crumbs"></nav>
+  <div class="intro"><div class="eyebrow" id="ch-eyebrow"></div><h1 id="ch-title"></h1></div>
+  <div class="pilots" id="ch-pilots"></div>
+</section>
+
+<section class="wrap view" id="v-pilot" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Counties</a><span aria-hidden="true">/</span><a href="#miami-dade">Miami-Dade</a><span aria-hidden="true">/</span><a href="#miami-dade.solid-waste">♻️ Solid Waste</a><span aria-hidden="true">/</span><span>Bulky Waste × Scrapp</span></nav>
+  <section class="hero">
+    <div>
+      <h1>What the County saves with <em>Scrapp</em></h1>
+      <p class="how">Book in the app<span>·</span>No 311 call<span>·</span>One truck, not two</p>
+    </div>
+    <div class="card save" aria-live="polite">
+      <div><div class="val" id="val">$0</div><div class="per" id="per">saved per year</div></div>
+      <div class="slider">
+        <div class="row"><label for="adopt">Residents using Scrapp</label><output id="adopt-o">50%</output></div>
+        <input type="range" id="adopt" min="0" max="100" step="1" value="50">
+      </div>
+      <div class="presets" role="group" aria-label="Scenario">
+        <button type="button" data-p="low">Conservative</button>
+        <button type="button" data-p="mid">Expected</button>
+        <button type="button" data-p="high">Full</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="cuts" aria-label="Impact">
+    <div class="cut"><div class="v" id="c1">0%</div><div class="l">fewer bulky-waste 311 calls</div></div>
+    <div class="cut"><div class="v" id="c2">0%</div><div class="l">fewer truck trips</div></div>
+    <div class="cut"><div class="v" id="c3">0</div><div class="l">call-taker positions freed</div></div>
+  </section>
+
+  <div class="charts">
+    <section class="card" aria-labelledby="g1"><h2 id="g1">Yearly cost</h2><div class="chart" id="cost"></div></section>
+    <section class="card" aria-labelledby="g2"><h2 id="g2">Savings over five years</h2><div class="chart" id="five"></div></section>
+  </div>
+
+  <details>
+    <summary>Adjust assumptions</summary>
+    <div class="dbody">
+      <div class="grid3">
+        <div class="ctl"><div class="row"><label for="calls">Bulky pickups per year</label><output id="calls-o"></output></div><input type="range" id="calls" min="80000" max="180000" step="1000"></div>
+        <div class="ctl"><div class="row"><label for="cpt">Cost of a 311 call</label><output id="cpt-o"></output></div><input type="range" id="cpt" min="20" max="80" step="1"></div>
+        <div class="ctl"><div class="row"><label for="avoid">Share of call cost saved</label><output id="avoid-o"></output></div><input type="range" id="avoid" min="0" max="100" step="5"></div>
+        <div class="ctl"><div class="row"><label for="disp">Cost of a truck trip</label><output id="disp-o"></output></div><input type="range" id="disp" min="15" max="70" step="0.5"></div>
+        <div class="ctl"><div class="row"><span>Trucks per pickup: today → Scrapp</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span class="segb" id="tnow" role="group" aria-label="Trucks today"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button></span><span aria-hidden="true">→</span><span class="segb" id="twith" role="group" aria-label="Trucks with Scrapp"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button></span></div></div>
+        <div class="ctl"><div class="row"><label for="scrapp">Scrapp contract per year</label></div><div class="money"><span>$</span><input id="scrapp" type="text" inputmode="numeric" autocomplete="off"></div></div>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary>How it's calculated</summary>
+    <div class="dbody">
+      <div class="formula">savings = calls moved × cost of a 311 call × share saved
+        + truck trips avoided × cost of a truck trip
+        − Scrapp contract</div>
+      <div class="src">
+        <span>~340,000 311 requests a year, ~40% bulky waste. $15M Contact Center budget ≈ $44 per call. Truck trip $30–$45.</span>
+        <span><a href="https://gis-mdc.opendata.arcgis.com/search?tags=311" target="_blank" rel="noopener">Miami-Dade Open Data: 311</a></span>
+      </div>
+    </div>
+  </details>
+</section>
+<section class="wrap view" id="v-sarg" hidden>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Counties</a><span aria-hidden="true">/</span><a href="#miami-dade">Miami-Dade</a><span aria-hidden="true">/</span><a href="#miami-dade.sargassum">🪸 Sargassum</a><span aria-hidden="true">/</span><span>Carbonwave</span></nav>
+
+  <section class="hero">
+    <div>
+      <h1>Turning beach seaweed into <em>savings</em></h1>
+      <p style="margin-top:16px"><span class="badge"><i></i>Lab safety tests in progress</span></p>
+    </div>
+    <div class="card save" aria-live="polite">
+      <div><div class="val" id="s-val">$0</div><div class="per">saved by the County per year</div></div>
+      <div class="slider">
+        <div class="row"><label for="s-share">Sargassum processed by Carbonwave</label><output id="s-share-o">50%</output></div>
+        <input type="range" id="s-share" min="0" max="100" step="5" value="50">
+      </div>
+      <div class="presets" role="group" aria-label="Scenario">
+        <button type="button" data-sp="pilot">Pilot</button>
+        <button type="button" data-sp="mid">Expected</button>
+        <button type="button" data-sp="full">Full</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="cuts" aria-label="Impact">
+    <div class="cut"><div class="v" id="s-c1">0</div><div class="l">tons kept out of the landfill</div></div>
+    <div class="cut"><div class="v" id="s-c2">0</div><div class="l">cars’ yearly emissions avoided</div></div>
+    <div class="cut"><div class="v" id="s-c3">$0</div><div class="l">tourism spending protected per 0.1%</div></div>
+  </section>
+
+  <section class="card" aria-labelledby="sk-h">
+    <h2 id="sk-h">Where the seaweed goes</h2>
+    <div class="chart" id="s-sankey"></div>
+    <p class="fnote" id="s-fnote"></p>
+  </section>
+
+  <section class="card" aria-labelledby="s-g2"><h2 id="s-g2">Savings over five years</h2><div class="chart" id="s-five"></div></section>
+  <details>
+    <summary>Adjust assumptions</summary>
+    <div class="dbody">
+      <div class="grid3">
+        <div class="ctl"><div class="row"><label for="s-contract">Beach cleanup contract per year (estimate)</label><output id="s-contract-o"></output></div><input type="range" id="s-contract" min="1000000" max="10000000" step="100000"></div>
+        <div class="ctl"><div class="row"><label for="s-cut">Lower bid by Carbonwave (estimate)</label><output id="s-cut-o"></output></div><input type="range" id="s-cut" min="0" max="40" step="1"></div>
+        <div class="ctl"><div class="row"><label for="s-tons">Sargassum collected per year (estimate)</label><output id="s-tons-o"></output></div><input type="range" id="s-tons" min="1000" max="30000" step="500"></div>
+        <div class="ctl"><div class="row"><label for="s-km">Km of beach cleaned (estimate)</label><output id="s-km-o"></output></div><input type="range" id="s-km" min="5" max="50" step="1"></div>
+        <div class="ctl"><div class="row"><label for="s-co2">Tons CO₂e per ton landfilled (estimate)</label><output id="s-co2-o"></output></div><input type="range" id="s-co2" min="0" max="1" step="0.05"></div>
+        <div class="ctl"><div class="row"><label for="s-fee">Landfill tipping fee per ton</label><output id="s-fee-o"></output></div><input type="range" id="s-fee" min="40" max="100" step="0.5"></div>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary>How it's calculated</summary>
+    <div class="dbody">
+      <div class="formula">County savings = cleanup contract × share processed by Carbonwave × lower bid
+Tons kept out of landfill = tons collected × share processed
+Emissions avoided = tons kept out × CO₂e per ton ÷ 4.6 t per car per year
+Tourism protected = $22B visitor spending × 0.1%</div>
+      <div class="src">
+        <span>Fort Lauderdale cleanup $60,450 per km per year; Mexico $0.8–1.5M per km per year; sargassum cut local economic activity in Mexico by ~11.6% (Schling et al., Ecological Economics, 2025).</span>
+        <span>Miami-Dade visitors spent about $22B in 2024 (GMCVB, via WLRN). About $4M a year spent on beach tractors (WLRN, 2026). Tipping fee $76.12/ton (Miami-Dade DSWM).</span>
+        <span>Not counted: DSWM forgoes the tipping fee on diverted tons (shown in the money flow), sand kept on the beach, odour and health benefits.</span>
+        <span><a href="https://www.sciencedirect.com/science/article/pii/S092180092500360X" target="_blank" rel="noopener">Schling et al. 2025</a> · <a href="https://www.wlrn.org/environment/2026-05-12/miami-dades-sargassum-problem-isnt-going-away-and-neither-are-the-costs" target="_blank" rel="noopener">WLRN 2026</a> · <a href="https://epa.gov/habs/sargassum-inundation-events-sies-impacts-economy" target="_blank" rel="noopener">EPA</a></span>
+      </div>
+    </div>
+  </details>
+</section>
+</main>
+<footer>Miami-Dade Innovation Authority</footer>
+<div id="tip" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const P={low:{adopt:25,avoid:50,disp:30,calls:130000},mid:{adopt:50,avoid:70,disp:37.5,calls:133000},high:{adopt:100,avoid:100,disp:37.5,calls:130000}};
+const S={adopt:50,calls:133000,cpt:44,avoid:70,disp:37.5,tnow:2,twith:1,scrapp:0};
+let preset="mid";
+const AHT=6,FTE=2080,RAMP=2,GROWTH=0.014;
+const n=v=>Math.round(v).toLocaleString("en-US");
+const usd=v=>(v<0?"−":"")+"$"+Math.round(Math.abs(v)).toLocaleString("en-US");
+const M=v=>{const a=Math.abs(v),s=v<0?"−":"";return a>=1e6?s+"$"+(a/1e6).toFixed(1)+"M":s+"$"+Math.round(a/1e3)+"K"};
+const fmt={adopt:v=>v+"%",calls:n,cpt:v=>"$"+v,avoid:v=>v+"%",disp:v=>"$"+(+v).toFixed(2)};
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function calc(o){
+  const p=Object.assign({},S,o||{});
+  const moved=p.calls*p.adopt/100,tsave=Math.max(0,p.tnow-p.twith);
+  const intake=moved*p.cpt*p.avoid/100,trips=moved*tsave,truck=trips*p.disp;
+  const today=p.calls*p.cpt+p.calls*p.tnow*p.disp;
+  return {moved,trips,net:intake+truck-p.scrapp,today,withS:today-intake-truck+p.scrapp,tripsToday:p.calls*p.tnow};
+}
+
+function paint(el){el.style.setProperty("--p",((el.value-el.min)/(el.max-el.min)*100)+"%")}
+function sync(){
+  Object.keys(fmt).forEach(k=>{const el=$("#"+k);el.value=S[k];paint(el);$("#"+k+"-o").textContent=fmt[k](S[k])});
+  ["tnow","twith"].forEach(k=>$("#"+k).querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===S[k]))));
+  if(document.activeElement!==$("#scrapp"))$("#scrapp").value=n(S.scrapp);
+  document.querySelectorAll("[data-p]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.p===preset)));
+}
+Object.keys(fmt).forEach(k=>$("#"+k).addEventListener("input",e=>{S[k]=+e.target.value;preset=null;sync();render()}));
+["tnow","twith"].forEach(k=>$("#"+k).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S[k]=+b.dataset.v;preset=null;sync();render()}));
+$("#scrapp").addEventListener("input",e=>{S.scrapp=+e.target.value.replace(/[^0-9]/g,"")||0;preset=null;render()});
+$("#scrapp").addEventListener("blur",sync);
+document.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{Object.assign(S,P[b.dataset.p]);preset=b.dataset.p;sync();render()}));
+
+const tip=$("#tip");
+function tipOn(e,label,val){tip.replaceChildren();const s=document.createElement("span");s.textContent=label;const b=document.createElement("b");b.textContent=val;tip.append(s,b);tip.classList.add("on");
+  let x,y;if(e.clientX!=null&&e.type!=="focus"){x=e.clientX;y=e.clientY}else{const q=e.target.getBoundingClientRect();x=q.left+q.width/2;y=q.top}
+  let lx=x+12,ly=y-tip.offsetHeight-10;if(lx+tip.offsetWidth>innerWidth-8)lx=x-tip.offsetWidth-12;if(ly<8)ly=y+14;tip.style.left=lx+"px";tip.style.top=ly+"px"}
+function tipOff(){tip.classList.remove("on")}
+function bind(el,map){el.querySelectorAll("[data-t]").forEach(g=>{const d=map[g.dataset.t];const on=e=>tipOn(e,d[0],d[1]);g.addEventListener("pointermove",on);g.addEventListener("focus",on);g.addEventListener("pointerleave",tipOff);g.addEventListener("blur",tipOff)})}
+
+/* Yearly cost: two columns, the gap marked as savings */
+function renderCost(r){
+  const el=$("#cost"),W=Math.max(280,el.clientWidth),H=300,top=36,base=H-34;
+  const max=Math.max(r.today,r.withS)||1,sy=v=>base-(v/max)*(base-top);
+  const bw=Math.min(120,W*0.26),x1=W*0.27-bw/2,x2=W*0.66-bw/2;
+  const diff=r.today-r.withS;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yearly cost ${M(r.today)} today, ${M(r.withS)} with Scrapp">`;
+  s+=`<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>`;
+  s+=`<g class="hit" data-t="a" tabindex="0"><rect class="m" x="${x1}" y="${sy(r.today)}" width="${bw}" height="${base-sy(r.today)}" rx="6" fill="var(--m-orange)"/></g>`;
+  s+=`<text class="big" x="${x1+bw/2}" y="${sy(r.today)-10}" text-anchor="middle" font-size="22">${M(r.today)}</text>`;
+  s+=`<g class="hit" data-t="b" tabindex="0"><rect class="m" x="${x2}" y="${sy(r.withS)}" width="${bw}" height="${base-sy(r.withS)}" rx="6" fill="var(--c-with)"/></g>`;
+  if(diff>0){
+    const yT=sy(r.today),yW=sy(r.withS);
+    s+=`<rect x="${x2}" y="${yT}" width="${bw}" height="${yW-yT}" rx="6" fill="var(--c-save)" fill-opacity=".18" stroke="var(--c-save)" stroke-width="2" stroke-dasharray="5 4"/>`;
+    s+=`<line x1="${x1+bw}" x2="${x2}" y1="${yT}" y2="${yT}" stroke="var(--c-save)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+    const lx=x2+bw+10,anchor=lx+90>W?"end":"start",tx=anchor==="end"?x2+bw/2:lx;
+    s+=`<text class="big gain" x="${tx}" y="${(yT+yW)/2+2}" text-anchor="${anchor==="end"?"middle":"start"}" font-size="22">−${M(diff)}</text>`;
+    s+=`<text x="${anchor==="end"?x2+bw/2:lx}" y="${(yT+yW)/2+20}" text-anchor="${anchor==="end"?"middle":"start"}" font-size="13" style="fill:var(--muted)">saved</text>`;
+  }
+  s+=`<text class="big" x="${x2+bw/2}" y="${(diff>0?sy(r.today):sy(r.withS))-10}" text-anchor="middle" font-size="22" ${diff>0?'style="fill:var(--muted)"':''}>${diff>0?"":M(r.withS)}</text>`;
+  if(diff>0)s+=`<text x="${x2+bw/2}" y="${sy(r.withS)+24}" text-anchor="middle" font-size="18" class="big" style="fill:#fff">${M(r.withS)}</text>`;
+  s+=`<text class="ax" x="${x1+bw/2}" y="${H-10}" text-anchor="middle">Today</text><text class="ax" x="${x2+bw/2}" y="${H-10}" text-anchor="middle">With Scrapp</text>`;
+  s+="</svg>";el.innerHTML=s;
+  bind(el,{a:["Today",usd(r.today)],b:["With Scrapp",usd(r.withS)]});
+}
+
+/* Five years: cumulative savings building up */
+function renderFive(){
+  const el=$("#five"),W=Math.max(280,el.clientWidth),H=300,top=36,base=H-34;
+  let cum=0;const ys=[];for(let y=1;y<=5;y++){const g=Math.pow(1+GROWTH,y-1);cum+=calc({adopt:S.adopt*Math.min(1,y/RAMP),calls:S.calls*g}).net;ys.push(cum)}
+  const max=Math.max(1,...ys),sy=v=>base-(Math.max(0,v)/max)*(base-top),band=W/5,bw=Math.min(64,band*0.6);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative savings ${M(ys[4])} after five years">`;
+  s+=`<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>`;
+  ys.forEach((v,i)=>{const cx=band*i+band/2,last=i===4;
+    s+=`<g class="hit" data-t="${i}" tabindex="0"><rect x="${cx-band/2}" y="${top}" width="${band}" height="${base-top}" fill="transparent"/><rect class="m" x="${cx-bw/2}" y="${sy(v)}" width="${bw}" height="${base-sy(v)}" rx="6" fill="${last?"var(--c-save)":"var(--m-yellow)"}"/></g>`;
+    if(last)s+=`<text class="big gain" x="${cx}" y="${sy(v)-10}" text-anchor="middle" font-size="22">${M(v)}</text>`;
+    s+=`<text class="ax" x="${cx}" y="${H-10}" text-anchor="middle">Year ${i+1}</text>`});
+  s+="</svg>";el.innerHTML=s;
+  const map={};ys.forEach((v,i)=>map[i]=[`Saved by year ${i+1}`,usd(v)]);bind(el,map);
+}
+
+let shown=0,raf=0;
+function count(el,to){cancelAnimationFrame(raf);if(reduce){shown=to;el.textContent=M(to);return}
+  const from=shown,t0=performance.now();const step=t=>{const k=Math.min(1,(t-t0)/450),e=1-Math.pow(1-k,3);shown=from+(to-from)*e;el.textContent=M(shown);if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
+
+function render(){
+  const r=calc();
+  count($("#val"),r.net);
+  $("#per").textContent=S.scrapp>0?"saved per year, after Scrapp's cost":"saved per year";
+  $("#c1").textContent=Math.round(S.adopt)+"%";
+  $("#c2").textContent=(r.tripsToday>0?Math.round(r.trips/r.tripsToday*100):0)+"%";
+  const fte=r.moved*AHT/60/FTE;$("#c3").textContent=fte>=1?"≈ "+Math.round(fte):fte>0?"< 1":"0";
+  renderCost(r);renderFive();
+}
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,120)});
+sync();render();window.__bulky=render;
+})();
+
+/* ---------- counties, challenges, pilots ---------- */
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const DATA=[
+  {id:"miami-dade",name:"Miami-Dade",state:"Florida",challenges:[
+    {id:"solid-waste",emoji:"♻️",name:"Solid Waste",pilots:[
+      {id:"bulky",name:"Bulky Waste × Scrapp",desc:"Bulky pickups booked in an app instead of 311",live:true},
+      {id:"fertile-earth",name:"Fertile Earth",desc:"Fertile Earth Worm Farm"}]},
+    {id:"housing",emoji:"🏠",name:"Housing",pilots:[
+      {id:"digital-loan",name:"Digital Loan Application System"},
+      {id:"ai-concierge",name:"Resident AI Concierge"},
+      {id:"unified-waitlist",name:"Unified Waitlist Management System"}]},
+    {id:"sargassum",emoji:"🪸",name:"Sargassum",pilots:[{id:"carbonwave",name:"Carbonwave",desc:"Seaweed turned into fertilizer and cosmetics instead of landfill",live:true},{id:"processing",name:"Sargassum Processing",desc:"X-Met, Algas, Chemergy"}]},
+    {id:"airport",emoji:"✈️",name:"Airport",pilots:[{id:"routeme",name:"Passenger Experience",desc:"RouteMe"}]},
+    {id:"port-miami",emoji:"🚢",name:"PortMiami",pilots:[{id:"gridmatrix",name:"Cruise Traffic",desc:"GridMatrix"}]},
+    {id:"water-sewer",emoji:"💧",name:"Water & Sewer",pilots:[]},
+    {id:"emergency",emoji:"🚨",name:"Emergency Management",pilots:[]}
+  ]},
+  {id:"akron",name:"Akron",state:"Ohio",challenges:[]},
+  {id:"macon-bibb",name:"Macon-Bibb",state:"Georgia",challenges:[]}
+];
+let current=(location.hash||"").slice(1);
+function nav(h){current=h||"home";try{if(location.hash.slice(1)!==current)history.pushState(null,"","#"+current)}catch(e){}route()}
+addEventListener("popstate",()=>{current=location.hash.slice(1);route()});
+const liveCount=c=>c.challenges.reduce((n,ch)=>n+ch.pilots.filter(p=>p.live).length,0);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+
+function drawCounties(sel){
+  const root=$("#counties");root.replaceChildren();
+  DATA.forEach(c=>{
+    const b=el("button","county");b.type="button";b.setAttribute("aria-pressed",String(c.id===sel));if(c.challenges.length)b.dataset.live="";
+    const top=el("div");top.append(el("div","st",c.state),el("div","nm",c.name));
+    const meta=el("div","meta");
+    meta.append(el("span",null,c.challenges.length?c.challenges.length+" challenges":"Challenges coming soon"));
+    const lc=liveCount(c);meta.append(el("span","chip"+(lc?" live":""),lc?lc+" live":"Coming soon"));
+    const bar=el("div","bar4");bar.innerHTML="<i></i><i></i><i></i><i></i>";
+    b.append(top,bar,meta);
+    b.addEventListener("click",()=>nav(c.id));
+    root.appendChild(b);
+  });
+}
+function drawCountyPanel(c){
+  const p=$("#county-panel");if(!c){p.hidden=true;return}
+  p.hidden=false;$("#cp-title").textContent=c.name+" challenges";
+  const body=$("#cp-body");body.replaceChildren();
+  if(!c.challenges.length){
+    $("#cp-sub").textContent="";
+    const d=el("div","soon");d.append(el("h2",null,"Coming soon"),el("p",null,c.name+" challenges will appear here once they are set up."));body.appendChild(d);return;
+  }
+  const lc=liveCount(c);$("#cp-sub").textContent=lc+" pilot"+(lc===1?"":"s")+" live";
+  const g=el("div","challenges");
+  c.challenges.forEach(ch=>{
+    const a=el("a","chal");a.href="#"+c.id+"."+ch.id;
+    const t=el("div","t");t.append(el("h3",null,(ch.emoji?ch.emoji+"\u2002":"")+ch.name));const live=ch.pilots.some(x=>x.live);t.append(el("span","chip"+(live?" live":""),live?"Live":"Coming soon"));
+    const ul=el("ul");ch.pilots.forEach(pl=>{const li=el("li",pl.live?"on":null);li.append(el("span",null,pl.name),el("em",null,pl.live?"Live":"Soon"));ul.appendChild(li)});
+    a.append(t);if(ch.pilots.length)a.append(ul);else a.append(el("p",null,"Pilots coming soon"));g.appendChild(a);
+  });
+  body.appendChild(g);
+}
+function drawChallenge(c,ch){
+  const cr=$("#ch-crumbs");cr.replaceChildren();
+  const link=(h,t)=>{const a=el("a",null,t);a.href=h;return a};const sep=()=>{const s=el("span",null,"/");s.setAttribute("aria-hidden","true");return s};
+  cr.append(link("#home","Counties"),sep(),link("#"+c.id,c.name),sep(),el("span",null,ch.name));
+  $("#ch-eyebrow").textContent=c.name;$("#ch-title").textContent=(ch.emoji?ch.emoji+"\u2002":"")+ch.name;
+  const g=$("#ch-pilots");g.replaceChildren();
+  if(!ch.pilots.length){const d=el("div","soon");d.style.gridColumn="1/-1";d.append(el("h2",null,"Coming soon"),el("p",null,"Pilots for this challenge will appear here."));g.appendChild(d);return}
+  ch.pilots.forEach(pl=>{
+    const card=pl.live?el("a","pilot"):el("div","pilot");if(pl.live)card.href="#"+c.id+"."+ch.id+"."+pl.id;
+    const t=el("div","t");t.style.cssText="display:flex;justify-content:space-between;gap:8px 10px;align-items:flex-start;flex-wrap:wrap";t.append(el("h3",null,pl.name),el("span","chip"+(pl.live?" live":""),pl.live?"Live":"Coming soon"));
+    card.append(t);if(pl.desc)card.append(el("p",null,pl.desc));if(pl.live)card.append(el("span","go","Open calculator →"));
+    g.appendChild(card);
+  });
+}
+function show(id){["v-home","v-chal","v-pilot","v-sarg"].forEach(v=>{$("#"+v).hidden=v!==id})}
+function route(){
+  const parts=(current||"home").split(".");
+  const c=DATA.find(x=>x.id===parts[0]);
+  if(!c){show("v-home");drawCounties(null);drawCountyPanel(null);return}
+  const ch=c.challenges.find(x=>x.id===parts[1]);
+  if(!ch){show("v-home");drawCounties(c.id);drawCountyPanel(c);requestAnimationFrame(()=>$("#county-panel").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"}));return}
+  const pl=ch.pilots.find(x=>x.id===parts[2]&&x.live);
+  if(pl&&pl.id==="bulky"){show("v-pilot");window.__bulky&&window.__bulky();window.scrollTo(0,0);return}
+  if(pl&&pl.id==="carbonwave"){show("v-sarg");window.__sarg&&window.__sarg();window.scrollTo(0,0);return}
+  show("v-chal");drawChallenge(c,ch);window.scrollTo(0,0);
+}
+/* In-page navigation: links are handled here, so they work even where the host frame blocks hash links. */
+document.addEventListener("click",e=>{
+  const a=e.target.closest('a[href^="#"]');if(!a)return;
+  e.preventDefault();nav(a.getAttribute("href").slice(1));
+});
+addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h!==current){current=h;route()}});
+route();
+})();
+
+/* ---------- Sargassum × Carbonwave ---------- */
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const P={pilot:{share:10},mid:{share:50},full:{share:100}};
+const S={share:50,contract:4000000,cut:20,tons:5000,km:24,co2:0.2,fee:76.12};
+let preset="mid";
+const VISITOR=22e9,CAR=4.6,RAMP=2,FL_KM=60450,MX_KM=[800000,1500000];
+const n=v=>Math.round(v).toLocaleString("en-US");
+const usd=v=>(v<0?"−":"")+"$"+Math.round(Math.abs(v)).toLocaleString("en-US");
+const M=v=>{const a=Math.abs(v),s=v<0?"−":"";return a>=1e6?s+"$"+(a/1e6).toFixed(1)+"M":s+"$"+Math.round(a/1e3)+"K"};
+const fmt={share:v=>v+"%",contract:v=>M(+v),cut:v=>v+"%",tons:v=>n(v),km:v=>v+" km",co2:v=>(+v).toFixed(2),fee:v=>"$"+(+v).toFixed(2)};
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function calc(o){
+  const p=Object.assign({},S,o||{});
+  const sh=p.share/100;
+  const save=p.contract*sh*(p.cut/100);
+  const diverted=p.tons*sh;
+  return {save,diverted,landfill:p.tons-diverted,withCost:p.contract-save,co2:diverted*p.co2,lostFee:diverted*p.fee,todayFee:p.tons*p.fee};
+}
+
+function paint(el){el.style.setProperty("--p",((el.value-el.min)/(el.max-el.min)*100)+"%")}
+function sync(){
+  Object.keys(fmt).forEach(k=>{const el=$("#s-"+k);el.value=S[k];paint(el);$("#s-"+k+"-o").textContent=fmt[k](S[k])});
+  document.querySelectorAll("[data-sp]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sp===preset)));
+}
+Object.keys(fmt).forEach(k=>$("#s-"+k).addEventListener("input",e=>{S[k]=+e.target.value;if(k==="share")preset=null;sync();render()}));
+document.querySelectorAll("[data-sp]").forEach(b=>b.addEventListener("click",()=>{Object.assign(S,P[b.dataset.sp]);preset=b.dataset.sp;sync();render()}));
+
+const tip=$("#tip");
+function tipOn(e,label,val){tip.replaceChildren();const s=document.createElement("span");s.textContent=label;const b=document.createElement("b");b.textContent=val;tip.append(s,b);tip.classList.add("on");
+  let x,y;if(e.clientX!=null&&e.type!=="focus"){x=e.clientX;y=e.clientY}else{const q=e.target.getBoundingClientRect();x=q.left+q.width/2;y=q.top}
+  let lx=x+12,ly=y-tip.offsetHeight-10;if(lx+tip.offsetWidth>innerWidth-8)lx=x-tip.offsetWidth-12;if(ly<8)ly=y+14;tip.style.left=lx+"px";tip.style.top=ly+"px"}
+function tipOff(){tip.classList.remove("on")}
+function bind(el,map){el.querySelectorAll("[data-t]").forEach(g=>{const d=map[g.dataset.t];const on=e=>tipOn(e,d[0],d[1]);g.addEventListener("pointermove",on);g.addEventListener("focus",on);g.addEventListener("pointerleave",tipOff);g.addEventListener("blur",tipOff)})}
+
+
+/* Sankey: tons from beaches, through the collector, to landfill or products */
+function renderSankey(r){
+  const el=$("#s-sankey"),W=Math.max(300,el.clientWidth),narrow=W<560,H=narrow?300:340,nw=14,pad=narrow?0:4;
+  const T=S.tons,cw=r.diverted,br=T-cw,gap=cw>0&&br>0?18:0,usable=H-60-gap,k=usable/T;
+  const x0=pad,x1=W*0.38,x2=narrow?W-nw-96:W-nw-200,top=24;
+  const hB=br*k,hC=cw*k,y0=top+gap/2;
+  const yBR=top,yCW=top+hB+gap;
+  const rib=(xa,ya,ha,xb,yb,hb,id,c1,c2,lab)=>{if(ha<.5)return"";const m=(xa+xb)/2;
+    return `<defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="${c1}" stop-opacity=".55"/><stop offset="1" stop-color="${c2}" stop-opacity=".55"/></linearGradient></defs>
+    <path class="rib" data-t="${id}" tabindex="0" d="M${xa},${ya} C${m},${ya} ${m},${yb} ${xb},${yb} L${xb},${yb+hb} C${m},${yb+hb} ${m},${ya+ha} ${xa},${ya+ha} Z" fill="url(#${id})"/>`};
+  const node=(x,y,h,c)=>h>.5?`<rect x="${x}" y="${y}" width="${nw}" height="${h}" rx="4" fill="${c}"/>`:"";
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${n(T)} tons a year: ${n(br)} to landfill, ${n(cw)} reused by Carbonwave">`;
+  if(narrow){
+    s+=rib(x0+nw,y0,hB,x2,yBR,hB,"rb2","#FFAA00","#9CA3AF")+rib(x0+nw,y0+hB,hC,x2,yCW,hC,"rc2","#6EBC59","#6EBC59");
+    s+=node(x0,y0,hB+hC,"var(--ink-2)")+node(x2,yBR,hB,"#9CA3AF")+node(x2,yCW,hC,"#6EBC59");
+    const L2=(y,a,b,c)=>`<text class="sk-node" x="${x2+nw+8}" y="${y}">${a}</text><text class="sk-sub" x="${x2+nw+8}" y="${y+16}">${b}</text><text class="sk-sub" x="${x2+nw+8}" y="${y+32}">${c}</text>`;
+    s+=`<text class="sk-sub" x="${x0}" y="14">${n(T)} tons a year</text>`;
+    if(hB>.5)s+=L2(yBR+Math.min(hB/2,50)-10,"Landfill",n(br)+" t","Beach Raker");
+    if(hC>.5)s+=L2(yCW+Math.max(12,hC/2)-10,"Products",n(cw)+" t","Carbonwave");
+    s+="</svg>";el.innerHTML=s;
+    bind(el,{rb2:["Raked by Beach Raker, landfilled",n(br)+" tons a year"],rc2:["Collected by Carbonwave, turned into products",n(cw)+" tons a year"]});return;
+  }
+  // beaches → collectors
+  s+=rib(x0+nw,y0,hB,x1,yBR,hB,"rb1","#9CA3AF","#FFAA00");
+  s+=rib(x0+nw,y0+hB,hC,x1,yCW,hC,"rc1","#9CA3AF","#6EBC59");
+  // collectors → destinations
+  s+=rib(x1+nw,yBR,hB,x2,yBR,hB,"rb2","#FFAA00","#9CA3AF");
+  s+=rib(x1+nw,yCW,hC,x2,yCW,hC,"rc2","#6EBC59","#6EBC59");
+  s+=node(x0,y0,hB+hC,"var(--ink-2)")+node(x1,yBR,hB,"#FFAA00")+node(x1,yCW,hC,"#6EBC59")+node(x2,yBR,hB,"#9CA3AF")+node(x2,yCW,hC,"#6EBC59");
+  // labels
+  const L=(x,y,a,b,anchor)=>`<text class="sk-node" x="${x}" y="${y}" text-anchor="${anchor||"start"}">${a}</text><text class="sk-sub" x="${x}" y="${y+17}" text-anchor="${anchor||"start"}">${b}</text>`;
+  s+=`<text class="sk-sub" x="${x0}" y="14">Beaches</text>`;
+  s+=`<text class="sk-sub" x="${x1}" y="14">Collected by</text>`;
+  s+=`<text class="sk-sub" x="${x2}" y="14">Ends up as</text>`;
+  if(!narrow)s+=L(x0+nw+10,y0+(hB+hC)/2-6,n(T)+" tons","a year");
+  if(hB>.5)s+=L(x1+nw+10,yBR+Math.min(hB/2,60)-2,"Beach Raker","$"+S.fee.toFixed(0)+"/ton to dump it");
+  if(hC>.5)s+=L(x1+nw+10,yCW+Math.max(14,hC/2)-2,"Carbonwave","about $50/ton, then sold");
+  if(hB>.5)s+=L(x2+nw+8,yBR+Math.min(hB/2,60)-2,narrow?"Landfill":"Landfill",n(br)+" t");
+  if(hC>.5)s+=L(x2+nw+8,yCW+Math.max(14,hC/2)-2,narrow?"Products":"Fertilizer & cosmetics",n(cw)+" t");
+  s+="</svg>";el.innerHTML=s;
+  bind(el,{rb1:["Raked by Beach Raker",n(br)+" tons a year"],rc1:["Collected by Carbonwave",n(cw)+" tons a year"],rb2:["Landfilled",n(br)+" tons · "+M(br*S.fee)+" in tipping fees"],rc2:["Turned into products",n(cw)+" tons a year"]});
+}
+
+/* Season: monthly arrivals (illustrative shape, peaks June–August), split reused vs landfill */
+const SEASON=[1,1,3,6,11,16,19,17,12,7,4,3];const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function renderSeason(r){
+  const el=$("#s-season"),W=Math.max(300,el.clientWidth),H=240,m={l:8,r:8,t:28,b:28},pw=W-m.l-m.r,ph=H-m.t-m.b;
+  const sum=SEASON.reduce((a,b)=>a+b,0),tons=SEASON.map(w=>S.tons*w/sum),sh=S.share/100;
+  const max=Math.max(...tons),sx=i=>m.l+i/11*pw,sy=v=>m.t+ph-(v/max)*ph;
+  const path=(f)=>tons.map((t,i)=>`${i?"L":"M"}${sx(i)},${sy(f(t))}`).join("");
+  const area=(fTop,fBot)=>path(fTop)+tons.slice().reverse().map((t,j)=>{const i=11-j;return`L${sx(i)},${sy(fBot(t))}`}).join("")+"Z";
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly sargassum, peak in July">`;
+  s+=`<path d="${area(t=>t,t=>t*sh)}" fill="#C4CAD3" fill-opacity=".9"/>`;
+  s+=`<path d="${area(t=>t*sh,()=>0)}" fill="#6EBC59" fill-opacity=".9"/>`;
+  s+=`<path d="${path(t=>t)}" fill="none" stroke="var(--ink-2)" stroke-width="1.5"/>`;
+  s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${m.t+ph}" y2="${m.t+ph}" stroke="var(--line-2)"/>`;
+  MON.forEach((mo,i)=>{if(W<520&&i%2)return;s+=`<text class="ax" x="${sx(i)}" y="${H-8}" text-anchor="${i===0?"start":i===11?"end":"middle"}">${mo}</text>`});
+  const pk=6;s+=`<circle cx="${sx(pk)}" cy="${sy(tons[pk])}" r="5" fill="var(--ink)"/><text x="${W<520?sx(pk)-10:sx(pk)+10}" y="${sy(tons[pk])-8}" text-anchor="${W<520?"end":"start"}" class="big" font-size="15">Peak: ${n(tons[pk])} t in July</text>`;
+  s+=`<line id="se-x" x1="0" x2="0" y1="${m.t}" y2="${m.t+ph}" stroke="var(--ink-2)" opacity="0"/><rect id="se-hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  s+="</svg>";el.innerHTML=s;
+  const svg=el.querySelector("svg"),hit=el.querySelector("#se-hit"),xl=el.querySelector("#se-x");
+  hit.addEventListener("pointermove",e=>{const rc=svg.getBoundingClientRect(),px=(e.clientX-rc.left)*W/rc.width;const i=Math.max(0,Math.min(11,Math.round((px-m.l)/pw*11)));
+    xl.setAttribute("x1",sx(i));xl.setAttribute("x2",sx(i));xl.setAttribute("opacity",".4");tipOn(e,MON[i]+" · reused / landfilled",n(tons[i]*sh)+" t / "+n(tons[i]*(1-sh))+" t")});
+  hit.addEventListener("pointerleave",()=>{xl.setAttribute("opacity","0");tipOff()});
+}
+
+/* Bridge: today's contract → lower bid → tipping fees Solid Waste gives up → net */
+function renderBridge(r){
+  const el=$("#s-bridge"),W=Math.max(280,el.clientWidth),H=280,top=40,base=H-34;
+  const today=S.contract,afterBid=today-r.save,net=afterBid+r.lostFee;
+  const steps=[{l:"Today",a:0,b:today,c:"#FFAA00",v:M(today)},{l:"Lower bid",a:afterBid,b:today,c:"#6EBC59",v:"−"+M(r.save)},{l:"Tipping fees forgone",a:afterBid,b:net,c:"#9CA3AF",v:"+"+M(r.lostFee)},{l:"Net for County",a:0,b:net,c:"#0179C2",v:M(net)}];
+  const lo=Math.min(today,net)*0.8,max=today*1.02,sy=v=>base-((v-lo)/(max-lo))*(base-top);
+  const band=W/4,bw=Math.min(78,band*0.62);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="County cost from ${M(today)} to ${M(net)}">`;
+  s+=`<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>`;
+  steps.forEach((d,i)=>{const cx=band*i+band/2,y1=sy(Math.max(d.a,d.b)),y2=d.a===0?base:sy(Math.min(d.a,d.b));
+    s+=`<g class="hit" data-t="${i}" tabindex="0"><rect class="m" x="${cx-bw/2}" y="${y1}" width="${bw}" height="${Math.max(2,y2-y1)}" rx="5" fill="${d.c}"/></g>`;
+    s+=`<text class="big ${i===1?"gain":""}" x="${cx}" y="${y1-9}" text-anchor="middle" font-size="16">${d.v}</text>`;
+    s+=`<text class="ax" x="${cx}" y="${H-10}" text-anchor="middle" font-size="12">${W<420&&i===2?"Fees forgone":d.l}</text>`;
+    if(i<3){const yy=sy(i===0?today:i===1?afterBid:net);s+=`<line x1="${cx+bw/2}" x2="${cx+band-bw/2}" y1="${yy}" y2="${yy}" stroke="var(--line-2)" stroke-dasharray="3 3"/>`}
+  });
+  s+=`<text class="ax" x="${W}" y="12" text-anchor="end" font-size="11">Scale starts at ${M(lo)}</text>`;
+  s+="</svg>";el.innerHTML=s;
+  bind(el,{0:["Cleanup contract today",usd(today)],1:["Lower bid from Carbonwave","−"+usd(r.save)],2:["Tipping fees Solid Waste no longer collects","+"+usd(r.lostFee)],3:["Net cost to the County",usd(net)]});
+}
+
+/* cost per km: horizontal bars, Mexico shown as a low–high range */
+function renderKm(r){
+  const el=$("#s-km"),W=Math.max(280,el.clientWidth),narrow=W<480,rowH=narrow?64:50,top=narrow?22:6,lab=narrow?0:Math.min(150,W*0.36),H=top+rowH*4+10;
+  const rows=[
+    {k:"mx",l:"Mexico",v:MX_KM[0],hi:MX_KM[1],c:"var(--c-ctx)",txt:"$0.8–1.5M"},
+    {k:"today",l:"Miami-Dade today",v:S.contract/S.km,c:"var(--m-orange)"},
+    {k:"with",l:"With Carbonwave",v:r.withCost/S.km,c:"var(--c-save)"},
+    {k:"fl",l:"Fort Lauderdale",v:FL_KM,c:"var(--c-ctx)"}];
+  const max=MX_KM[1],plot=W-lab-80,sx=v=>v/max*plot;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cleanup cost per km of beach per year">`;
+  rows.forEach((d,i)=>{const y=top+i*rowH,bh=24;
+    s+=narrow?`<text x="0" y="${y-8}" font-size="14" style="fill:var(--ink)">${d.l}</text>`:`<text x="${lab-12}" y="${y+bh/2+5}" text-anchor="end" font-size="14" style="fill:var(--ink)">${d.l}</text>`;
+    if(d.hi){s+=`<g class="hit" data-t="${d.k}" tabindex="0"><rect class="m" x="${lab}" y="${y}" width="${sx(d.hi)}" height="${bh}" rx="5" fill="${d.c}" fill-opacity=".45"/><rect class="m" x="${lab}" y="${y}" width="${sx(d.v)}" height="${bh}" rx="5" fill="${d.c}"/></g>`;
+      s+=`<text x="${lab+sx(d.hi)+8}" y="${y+bh/2+5}" font-size="14" class="big" style="font-weight:700">${d.txt}</text>`}
+    else{s+=`<g class="hit" data-t="${d.k}" tabindex="0"><rect class="m" x="${lab}" y="${y}" width="${Math.max(3,sx(d.v))}" height="${bh}" rx="5" fill="${d.c}"/></g>`;
+      s+=`<text x="${lab+Math.max(3,sx(d.v))+8}" y="${y+bh/2+5}" font-size="14" class="big ${d.k==="with"?"gain":""}" style="font-weight:700">${M(d.v)}</text>`}
+  });
+  s+="</svg>";el.innerHTML=s;
+  bind(el,{mx:["Mexico, per km per year","$800,000–$1,500,000"],today:["Miami-Dade today, per km","~"+usd(S.contract/S.km)],with:["With Carbonwave, per km","~"+usd(r.withCost/S.km)],fl:["Fort Lauderdale, per km","$60,450"]});
+}
+
+/* five-year cumulative savings */
+function renderFive(){
+  /* Running total as a rising area: starts at $0 today, a point per year, the final total called out */
+  const el=$("#s-five"),W=Math.max(280,el.clientWidth),H=280,m={l:16,r:W<480?16:110,t:40,b:34},pw=W-m.l-m.r,base=H-m.b;
+  let cum=0;const ys=[0];for(let y=1;y<=5;y++){cum+=calc({share:S.share*Math.min(1,y/RAMP)}).save;ys.push(cum)}
+  const max=Math.max(1,ys[5]),sx=i=>m.l+i/5*pw,sy=v=>base-(v/max)*(base-m.t);
+  const line=ys.map((v,i)=>`${i?"L":"M"}${sx(i)},${sy(v)}`).join("");
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running total of savings, ${M(ys[5])} after five years">`;
+  s+=`<defs><linearGradient id="fg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6EBC59" stop-opacity=".55"/><stop offset="1" stop-color="#FDE050" stop-opacity=".25"/></linearGradient></defs>`;
+  [0.5,1].forEach(f=>{const y=sy(max*f);s+=`<line x1="${m.l}" x2="${m.l+pw}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-dasharray="3 4"/>`});
+  s+=`<path d="${line}L${sx(5)},${base}L${sx(0)},${base}Z" fill="url(#fg)"/>`;
+  s+=`<path d="${line}" fill="none" stroke="#4E9A3A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+  s+=`<line x1="${m.l}" x2="${m.l+pw}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>`;
+  ys.forEach((v,i)=>{const x=sx(i),y=sy(v),last=i===5;
+    s+=`<g class="hit" data-t="${i}" tabindex="0"><rect x="${x-pw/10}" y="${m.t-10}" width="${pw/5}" height="${base-m.t+10}" fill="transparent"/><circle class="m" cx="${x}" cy="${y}" r="${last?8:5}" fill="${last?"#6EBC59":"#fff"}" stroke="#4E9A3A" stroke-width="2.5"/></g>`;
+    s+=`<text class="ax" x="${x}" y="${H-10}" text-anchor="${i===0?"start":last&&W<480?"end":"middle"}">${i===0?(W<480?"Now":"Today"):(W<480?"Y"+i:"Year "+i)}</text>`});
+  const lx=W<480?sx(5)-12:sx(5)+16,anc=W<480?"end":"start";
+  s+=`<text class="big gain" x="${lx}" y="${sy(ys[5])+(W<480?-14:6)}" text-anchor="${anc}" font-size="26">${M(ys[5])}</text>`;
+  s+=`<text class="ax" x="${lx}" y="${sy(ys[5])+(W<480?2:24)}" text-anchor="${anc}">saved in total</text>`;
+  s+="</svg>";el.innerHTML=s;
+  const map={};ys.forEach((v,i)=>map[i]=[i?`Saved by year ${i}`:"Start",usd(v)]);bind(el,map);
+}
+
+let shown=0,raf=0;
+function count(el,to){cancelAnimationFrame(raf);if(reduce){shown=to;el.textContent=M(to);return}
+  const from=shown,t0=performance.now();const step=t=>{const k=Math.min(1,(t-t0)/450),e=1-Math.pow(1-k,3);shown=from+(to-from)*e;el.textContent=M(shown);if(k<1)raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
+
+function render(){
+  const r=calc();
+  count($("#s-val"),r.save);
+  $("#s-c1").textContent=n(r.diverted);
+  $("#s-c2").textContent=n(r.co2/CAR);
+  $("#s-c3").textContent=M(VISITOR*0.001);
+  const fn=$("#s-fnote");fn.replaceChildren();
+  const b=document.createElement("b");b.textContent=M(r.save)+" less";
+  fn.append("The cleanup contract costs ",b," a year. Solid Waste gives up about "+M(r.lostFee)+" in tipping fees on the diverted tons, but keeps that landfill space.");
+  renderSankey(r);renderFive();
+}
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,120)});
+sync();render();window.__sarg=render;
+})();
+</script>
+
+</body></html>
